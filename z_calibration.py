@@ -53,7 +53,7 @@ class ZCalibrationHelper:
                                                       'before_switch_gcode',
                                                       '')
         self.end_gcode = gcode_macro.load_template(config, 'end_gcode', '')
-        self.set_offset_macro = config.getstring('set_offset_macro', None)
+        self.set_offset_macro = config.get('offset_macro', None)
         self.query_endstops = self.printer.load_object(config,
                                                        'query_endstops')
         self.printer.register_event_handler("klippy:connect",
@@ -458,7 +458,8 @@ class CalibrationState:
         return probe_site
     def _set_new_gcode_offset(self, offset):
         if self.helper.set_offset_macro is not None:
-            self.gcode.create_gcode_command(self.helper.set_offset_macro, self.helper.set_offset_macro, {'Z': offset})
+            self.gcmd.respond_info("%s: Using offset macro %s" % (self.gcmd.get_command(), self.helper.set_offset_macro))
+            self.gcode.run_script_from_command("{} Z={}".format(self.helper.set_offset_macro, offset))
         else:
             # reset gcode z offset to 0
             gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
