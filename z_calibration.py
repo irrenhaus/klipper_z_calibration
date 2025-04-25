@@ -53,6 +53,7 @@ class ZCalibrationHelper:
                                                       'before_switch_gcode',
                                                       '')
         self.end_gcode = gcode_macro.load_template(config, 'end_gcode', '')
+        self.set_offset_macro = config.getstring('set_offset_macro', None)
         self.query_endstops = self.printer.load_object(config,
                                                        'query_endstops')
         self.printer.register_event_handler("klippy:connect",
@@ -456,16 +457,19 @@ class CalibrationState:
         probe_site[1] -= probe_offsets[1]
         return probe_site
     def _set_new_gcode_offset(self, offset):
-        # reset gcode z offset to 0
-        gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
-                                                      "SET_GCODE_OFFSET",
-                                                      {'Z': 0.0})
-        self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
-        # set new gcode z offset
-        gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
-                                                      "SET_GCODE_OFFSET",
-                                                      {'Z_ADJUST': offset})
-        self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
+        if self.helper.set_offset_macro is not None:
+            self.gcode.create_gcode_command(self.helper.set_offset_macro, self.helper.set_offset_macro, {'Z': offset})
+        else:
+            # reset gcode z offset to 0
+            gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
+                                                          "SET_GCODE_OFFSET",
+                                                          {'Z': 0.0})
+            self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
+            # set new gcode z offset
+            gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
+                                                          "SET_GCODE_OFFSET",
+                                                          {'Z_ADJUST': offset})
+            self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
     def calibrate_z(self, switch_offset, nozzle_site, switch_site, bed_site):
         # execute start gcode
         self.helper.start_gcode.run_gcode_from_command()
